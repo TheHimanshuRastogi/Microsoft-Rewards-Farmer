@@ -1,4 +1,10 @@
+"""
+This is a module docstring
+"""
+
+
 import requests
+
 
 MAX_LENGTHS = {
     "telegram": 4096,
@@ -31,5 +37,5 @@ class Notifier:
 
     def discord(self, message):
         url = self.args["discord"]
-        data = {"username": "Microsoft Rewards Farmer", "content": message}
+        data = {"email": "Microsoft Rewards Farmer", "content": message}
         requests.post(url, data=data)

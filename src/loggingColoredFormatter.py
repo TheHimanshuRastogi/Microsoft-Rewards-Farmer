@@ -1,3 +1,8 @@
+"""
+This is a module docstring
+"""
+
+
 import logging
 
 

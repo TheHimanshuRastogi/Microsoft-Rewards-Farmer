@@ -1,12 +1,17 @@
+"""
+This is a module docstring
+"""
+
+
 import json
-import logging
-import random
 import time
+import random
+import logging
 from datetime import date, timedelta
 
 import requests
-from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException
 
 from src.browser import Browser
 
@@ -49,7 +54,7 @@ class Searches:
 
     def bingSearches(self, numberOfSearches: int, pointsCounter: int = 0):
         logging.info(
-            "[BING] "
+            "[SEARCH] "
             + f"Starting {self.browser.browserType.capitalize()} Edge Bing searches...",
         )
 
@@ -57,7 +62,7 @@ class Searches:
         search_terms = self.getGoogleTrends(numberOfSearches)
         for word in search_terms:
             i += 1
-            logging.info("[BING] " + f"{i}/{numberOfSearches}")
+            logging.info("[SEARCH] " + f"{i}/{numberOfSearches}")
             points = self.bingSearch(word)
             if points <= pointsCounter:
                 relatedTerms = self.getRelatedTerms(word)[:2]
@@ -70,7 +75,7 @@ class Searches:
             else:
                 break
         logging.info(
-            f"[BING] Finished {self.browser.browserType.capitalize()} Edge Bing searches !"
+            f"[SEARCH] Finished {self.browser.browserType.capitalize()} Edge Bing searches!"
         )
         return pointsCounter
 
@@ -85,6 +90,6 @@ class Searches:
                 time.sleep(random.randint(10, 15))
                 return self.browser.utils.getBingAccountPoints()
             except TimeoutException:
-                logging.error("[BING] " + "Timeout, retrying in 5 seconds...")
+                logging.error("[SEARCH] " + "Timeout, retrying in 5 seconds...")
                 time.sleep(5)
                 continue

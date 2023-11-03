@@ -1,6 +1,11 @@
-import contextlib
-import logging
+"""
+This is a module docstring
+"""
+
+
 import time
+import logging
+import contextlib
 import urllib.parse
 
 from selenium.webdriver.common.by import By
@@ -15,7 +20,15 @@ class Login:
         self.utils = browser.utils
 
     def login(self):
-        logging.info("[LOGIN] " + "Logging-in...")
+
+        logging.info("[LOGIN] " + "Checking if already Logged-in...")
+        logged_in = self.checkBingLogin()
+        if logged_in:
+            logging.info("[LOGIN] " + "Already Logged-in!")
+            self.utils.goHome()
+            return
+        
+        logging.info("[LOGIN] " + "Trying to login...")
         self.webdriver.get("https://login.live.com/")
         alreadyLoggedIn = False
         while True:
@@ -37,21 +50,15 @@ class Login:
             self.executeLogin()
         self.utils.tryDismissCookieBanner()
 
-        logging.info("[LOGIN] " + "Logged-in !")
-
+        logging.info("[LOGIN] " + "Logged-in!")
         self.utils.goHome()
-        points = self.utils.getAccountPoints()
-
-        logging.info("[LOGIN] " + "Ensuring login on Bing...")
-        self.checkBingLogin()
-        logging.info("[LOGIN] Logged-in successfully !")
-        return points
+        return
 
     def executeLogin(self):
         self.utils.waitUntilVisible(By.ID, "loginHeader", 10)
         logging.info("[LOGIN] " + "Writing email...")
         self.webdriver.find_element(By.NAME, "loginfmt").send_keys(
-            self.browser.username
+            self.browser.email
         )
         self.webdriver.find_element(By.ID, "idSIButton9").click()
 
@@ -103,5 +110,7 @@ class Login:
                 self.utils.tryDismissBingCookieBanner()
                 with contextlib.suppress(Exception):
                     if self.utils.checkBingLogin():
-                        return
+                        return True
+            else:
+                return False
             time.sleep(1)

@@ -1,3 +1,8 @@
+"""
+This is a module docstring
+"""
+
+
 import random
 from typing import Any
 
@@ -31,7 +36,6 @@ class GenerateUserAgent:
 
     def userAgent(
         self,
-        browserConfig: dict[str, Any],
         mobile: bool = False,
     ) -> tuple[str, dict[str, Any], Any]:
         """
@@ -52,19 +56,7 @@ class GenerateUserAgent:
             else self.USER_AGENT_TEMPLATES.get("edge_pc", "")
         )
 
-        newBrowserConfig = None
-        userAgentMetadata = browserConfig.get("userAgentMetadata")
-        if not userAgentMetadata:
-            # ref : https://textslashplain.com/2021/09/21/determining-os-platform-version/
-            platformVersion = (
-                f"{random.randint(9,13) if mobile else random.randint(1,15)}.0.0"
-            )
-            newBrowserConfig = browserConfig
-            newBrowserConfig["userAgentMetadata"] = {
-                "platformVersion": platformVersion,
-            }
-        else:
-            platformVersion = userAgentMetadata["platformVersion"]
+        platformVersion = (f"{random.randint(9,13) if mobile else random.randint(1,15)}.0.0")
 
         uaMetadata = {
             "mobile": mobile,
@@ -85,7 +77,7 @@ class GenerateUserAgent:
             "model": "",
         }
 
-        return uaTemplate.format(system=system, app=app), uaMetadata, newBrowserConfig
+        return uaTemplate.format(system=system, app=app), uaMetadata
 
     def getSystemComponents(self, mobile: bool) -> str:
         """

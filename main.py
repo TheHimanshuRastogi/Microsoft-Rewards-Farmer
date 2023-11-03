@@ -1,17 +1,19 @@
-import argparse
+"""
+This is a module docstring
+"""
+
+
+import sys
 import json
 import logging
-import logging.handlers as handlers
-import random
-import sys
+import argparse
 from pathlib import Path
+import logging.handlers as handlers
 
-from src import Browser, DailySet, Login, MorePromotions, PunchCards, Searches
+from src.notifier import Notifier
 from src.constants import VERSION
 from src.loggingColoredFormatter import ColoredFormatter
-from src.notifier import Notifier
-
-POINTS_COUNTER = 0
+from src import Browser, DailySet, Login, MorePromotions, PunchCards, Searches
 
 
 def main():
@@ -85,27 +87,12 @@ def argumentParser() -> argparse.Namespace:
     )
     return parser.parse_args()
 
-
-def bannerDisplay():
-    farmerBanner = """
-    ███╗   ███╗███████╗    ███████╗ █████╗ ██████╗ ███╗   ███╗███████╗██████╗
-    ████╗ ████║██╔════╝    ██╔════╝██╔══██╗██╔══██╗████╗ ████║██╔════╝██╔══██╗
-    ██╔████╔██║███████╗    █████╗  ███████║██████╔╝██╔████╔██║█████╗  ██████╔╝
-    ██║╚██╔╝██║╚════██║    ██╔══╝  ██╔══██║██╔══██╗██║╚██╔╝██║██╔══╝  ██╔══██╗
-    ██║ ╚═╝ ██║███████║    ██║     ██║  ██║██║  ██║██║ ╚═╝ ██║███████╗██║  ██║
-    ╚═╝     ╚═╝╚══════╝    ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚═╝  ╚═╝"""
-    logging.error(farmerBanner)
-    logging.warning(
-        f"        by Charles Bel (@charlesbel)               version {VERSION}\n"
-    )
-
-
 def setupAccounts() -> dict:
     accountPath = Path(__file__).resolve().parent / "accounts.json"
     if not accountPath.exists():
         accountPath.write_text(
             json.dumps(
-                [{"username": "Your Email", "password": "Your Password"}], indent=4
+                [{"email": "Your Email", "password": "Your Password"}], indent=4
             ),
             encoding="utf-8",
         )
@@ -116,59 +103,55 @@ def setupAccounts() -> dict:
         logging.warning(noAccountsNotice)
         exit()
     loadedAccounts = json.loads(accountPath.read_text(encoding="utf-8"))
-    random.shuffle(loadedAccounts)
     return loadedAccounts
 
 
 def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
     logging.info(
-        f'********************{ currentAccount.get("username", "") }********************'
+        f'[ACCOUNT] {currentAccount.get("email", "")}'
     )
     with Browser(mobile=False, account=currentAccount, args=args) as desktopBrowser:
-        accountPointsCounter = Login(desktopBrowser).login()
-        startingPoints = accountPointsCounter
+        Login(desktopBrowser).login()
+        startingPoints = desktopBrowser.utils.getAccountPoints()
         logging.info(
-            f"[POINTS] You have {desktopBrowser.utils.formatNumber(accountPointsCounter)} points on your account !"
+            f"[POINTS] You have {desktopBrowser.utils.formatNumber(startingPoints)} points on your account!"
         )
         DailySet(desktopBrowser).completeDailySet()
         PunchCards(desktopBrowser).completePunchCards()
         MorePromotions(desktopBrowser).completeMorePromotions()
-        (
-            remainingSearches,
-            remainingSearchesM,
-        ) = desktopBrowser.utils.getRemainingSearches()
-        if remainingSearches != 0:
-            accountPointsCounter = Searches(desktopBrowser).bingSearches(
-                remainingSearches
+        remainingDesktop, remainingMobile = desktopBrowser.utils.getRemainingSearches()
+        if remainingDesktop == remainingMobile  == 0:
+            logging.info(
+                "[SEARCH] You have already completed today's searches!"
             )
+        if remainingDesktop != 0:
+            Searches(desktopBrowser).bingSearches(remainingDesktop)
+        endPoints = desktopBrowser.utils.getBingAccountPoints()
 
-        if remainingSearchesM != 0:
-            desktopBrowser.closeBrowser()
-            with Browser(
-                mobile=True, account=currentAccount, args=args
-            ) as mobileBrowser:
-                accountPointsCounter = Login(mobileBrowser).login()
-                accountPointsCounter = Searches(mobileBrowser).bingSearches(
-                    remainingSearchesM
-                )
+    if remainingMobile != 0:
+        with Browser(
+            mobile=True, account=currentAccount, args=args
+        ) as mobileBrowser:
+            Login(mobileBrowser).login()
+            endPoints = Searches(mobileBrowser).bingSearches(remainingMobile)
 
-        logging.info(
-            f"[POINTS] You have earned {desktopBrowser.utils.formatNumber(accountPointsCounter - startingPoints)} points today !"
-        )
-        logging.info(
-            f"[POINTS] You are now at {desktopBrowser.utils.formatNumber(accountPointsCounter)} points !\n"
-        )
+    logging.info(
+        f"[POINTS] You have earned {endPoints - startingPoints} points today!"
+    )
+    logging.info(
+        f"[POINTS] You are now at {endPoints} points!\n"
+    )
 
-        notifier.send(
-            "\n".join(
-                [
-                    "Microsoft Rewards Farmer",
-                    f"Account: {currentAccount.get('username', '')}",
-                    f"Points earned today: {desktopBrowser.utils.formatNumber(accountPointsCounter - startingPoints)}",
-                    f"Total points: {desktopBrowser.utils.formatNumber(accountPointsCounter)}",
-                ]
-            )
+    notifier.send(
+        "\n".join(
+            [
+                "Microsoft Rewards Farmer",
+                f"Account: {currentAccount.get('email', '')}",
+                    f"Points earned today: {endPoints - startingPoints}",
+                f"Total points: {endPoints}",
+            ]
         )
+    )
 
 
 if __name__ == "__main__":

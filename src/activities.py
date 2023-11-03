@@ -1,5 +1,10 @@
-import random
+"""
+This is a module docstring
+"""
+
+
 import time
+import random
 
 from selenium.webdriver.common.by import By
 

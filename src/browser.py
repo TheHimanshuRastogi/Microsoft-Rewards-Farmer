@@ -1,69 +1,67 @@
-import contextlib
+"""
+This is a module docstring
+"""
+
+import os
 import logging
-import random
-import uuid
-from pathlib import Path
+import contextlib
 from typing import Any
 
 import ipapi
-import seleniumwire.undetected_chromedriver as webdriver
-from selenium.webdriver.chrome.webdriver import WebDriver
+from selenium import webdriver
+try:
+    import seleniumwire.undetected_chromedriver as uc
+except ImportError:
+    pass
 
-from src.userAgentGenerator import GenerateUserAgent
+from src.os import OS
 from src.utils import Utils
+from src.userAgentGenerator import GenerateUserAgent
 
 
 class Browser:
     """WebDriver wrapper class."""
 
     def __init__(self, mobile: bool, account, args: Any) -> None:
+        
+        self.os = OS()
         self.mobile = mobile
         self.browserType = "mobile" if mobile else "desktop"
-        self.headless = not args.visible
-        self.username = account["username"]
+        self.headless = False or args.visible
+        self.email = account["email"]
         self.password = account["password"]
-        self.localeLang, self.localeGeo = self.getCCodeLang(args.lang, args.geo)
+        self.localeLang, self.localeGeo = self.getGeoLand(args.lang, args.geo)
         self.proxy = None
+
         if args.proxy:
             self.proxy = args.proxy
         elif account.get("proxy"):
             self.proxy = account["proxy"]
-        self.userDataDir = self.setupProfiles()
-        self.browserConfig = Utils.getBrowserConfig(self.userDataDir)
-        (
-            self.userAgent,
-            self.userAgentMetadata,
-            newBrowserConfig,
-        ) = GenerateUserAgent().userAgent(self.browserConfig, mobile)
-        if newBrowserConfig:
-            self.browserConfig = newBrowserConfig
-            Utils.saveBrowserConfig(self.userDataDir, self.browserConfig)
+
+        self.userAgent, self.userAgentMetadata = GenerateUserAgent().userAgent(self.mobile)
+
         self.webdriver = self.browserSetup()
         self.utils = Utils(self.webdriver)
 
-    def __enter__(self) -> "Browser":
-        return self
+    def browserSetup(self):
+        """Setup browser and return webdriver.Chrome (controllable browser)"""
 
-    def __exit__(self, *args: Any) -> None:
-        self.closeBrowser()
+        #-------------------Chrome-Options------------------# 
 
-    def closeBrowser(self) -> None:
-        """Perform actions to close the browser cleanly."""
-        # close web browser
-        with contextlib.suppress(Exception):
-            self.webdriver.quit()
-
-    def browserSetup(
-        self,
-    ) -> WebDriver:
         options = webdriver.ChromeOptions()
-        options.headless = self.headless
         options.add_argument(f"--lang={self.localeLang}")
         options.add_argument("--log-level=3")
-
         options.add_argument("--ignore-certificate-errors")
         options.add_argument("--ignore-certificate-errors-spki-list")
         options.add_argument("--ignore-ssl-errors")
+        if not self.headless:
+            options.add_argument("--headless")
+        if self.os.windows:
+            options.add_argument(f"--user-data-dir={os.getcwd()}/ChromeData")
+            options.add_argument(f"--profile-directory={self.email}")
+
+
+        #-----------------------Proxies---------------------# 
 
         seleniumwireOptions: dict[str, Any] = {"verify_ssl": False}
 
@@ -74,40 +72,30 @@ class Browser:
                 "no_proxy": "localhost,127.0.0.1",
             }
 
-        driver = webdriver.Chrome(
-            options=options,
-            seleniumwire_options=seleniumwireOptions,
-            user_data_dir=self.userDataDir.as_posix(),
-        )
+        #-----------------------WebDriver---------------------# 
 
-        seleniumLogger = logging.getLogger("seleniumwire")
-        seleniumLogger.setLevel(logging.ERROR)
+        if self.os.linux:
+            driver = uc.Chrome(
+                options=options,
+                seleniumwire_options=seleniumwireOptions
+            )
+            
+        elif self.os.windows:
+            driver = webdriver.Chrome(options)
 
-        if self.browserConfig.get("sizes"):
-            deviceHeight = self.browserConfig["sizes"]["height"]
-            deviceWidth = self.browserConfig["sizes"]["width"]
-        else:
-            if self.mobile:
-                deviceHeight = random.randint(568, 1024)
-                deviceWidth = random.randint(320, min(576, int(deviceHeight * 0.7)))
-            else:
-                deviceWidth = random.randint(1024, 2560)
-                deviceHeight = random.randint(768, min(1440, int(deviceWidth * 0.8)))
-            self.browserConfig["sizes"] = {
-                "height": deviceHeight,
-                "width": deviceWidth,
-            }
-            Utils.saveBrowserConfig(self.userDataDir, self.browserConfig)
+        #------------------Browser-Configration----------------# 
 
         if self.mobile:
+            deviceHeight = 800
+            deviceWidth = 400
             screenHeight = deviceHeight + 146
             screenWidth = deviceWidth
+            
         else:
+            deviceWidth = 1800
+            deviceHeight = 900
             screenWidth = deviceWidth + 55
-            screenHeight = deviceHeight + 151
-
-        logging.info(f"Screen size: {screenWidth}x{screenHeight}")
-        logging.info(f"Device size: {deviceWidth}x{deviceHeight}")
+            screenHeight = deviceHeight + 151        
 
         if self.mobile:
             driver.execute_cdp_cmd(
@@ -128,7 +116,7 @@ class Browser:
                 "screenHeight": screenHeight,
                 "positionX": 0,
                 "positionY": 0,
-                "viewport": {
+                 "viewport": {
                     "x": 0,
                     "y": 0,
                     "width": deviceWidth,
@@ -147,26 +135,18 @@ class Browser:
             },
         )
 
-        return driver
+        #------------------------Others----------------------# 
 
-    def setupProfiles(self) -> Path:
-        """
-        Sets up the sessions profile for the chrome browser.
-        Uses the username to create a unique profile for the session.
+        seleniumLogger = logging.getLogger("seleniumwire")
+        seleniumLogger.setLevel(logging.ERROR)
 
-        Returns:
-            Path
-        """
-        currentPath = Path(__file__)
-        parent = currentPath.parent.parent
-        sessionsDir = parent / "sessions"
+        logging.info(
+            f"[BROWSER] Working with {self.browserType.capitalize()} browser..."
+        )
 
-        sessionUuid = uuid.uuid5(uuid.NAMESPACE_DNS, self.username)
-        sessionsDir = sessionsDir / str(sessionUuid) / self.browserType
-        sessionsDir.mkdir(parents=True, exist_ok=True)
-        return sessionsDir
+        return driver 
 
-    def getCCodeLang(self, lang: str, geo: str) -> tuple:
+    def getGeoLand(self, lang: str, geo: str) -> tuple:
         if lang is None or geo is None:
             try:
                 nfo = ipapi.location()
@@ -178,3 +158,20 @@ class Browser:
             except Exception:  # pylint: disable=broad-except
                 return ("en", "US")
         return (lang, geo)
+    
+    def closeBrowser(self) -> None:
+        """Perform actions to close the browser cleanly."""
+        logging.info(
+            f"[BROWSER] Closing {self.browserType.capitalize()} browser!"
+        )
+
+        with contextlib.suppress(Exception):
+            self.webdriver.quit()
+
+    def __enter__(self) -> "Browser":
+        """Enter context manager"""
+        return self
+
+    def __exit__(self, *args: Any) -> None:
+        """Exit context manager"""
+        self.closeBrowser()

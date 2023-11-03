@@ -1,9 +1,13 @@
+"""
+This is a module docstring
+"""
+
+
 import logging
 import urllib.parse
 from datetime import datetime
 
 from src.browser import Browser
-
 from .activities import Activities
 
 
@@ -79,4 +83,4 @@ class DailySet:
                                     self.activities.completeQuiz()
             except Exception:  # pylint: disable=broad-except
                 self.browser.utils.resetTabs()
-        logging.info("[DAILY SET] Completed the Daily Set successfully !")
+        logging.info("[DAILY SET] Completed the Daily Set successfully!")

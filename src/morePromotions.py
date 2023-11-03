@@ -1,7 +1,11 @@
+"""
+This is a module docstring
+"""
+
+
 import logging
 
 from src.browser import Browser
-
 from .activities import Activities
 
 
@@ -38,4 +42,4 @@ class MorePromotions:
                         self.activities.completeSearch()
             except Exception:  # pylint: disable=broad-except
                 self.browser.utils.resetTabs()
-        logging.info("[MORE PROMO] Completed More Promotions successfully !")
+        logging.info("[MORE PROMO] Completed More Promotions successfully!")

@@ -1,13 +1,16 @@
-import contextlib
-import logging
-import random
+"""
+This is a module docstring
+"""
+
 import time
+import random
+import logging
+import contextlib
 import urllib.parse
 
 from selenium.webdriver.common.by import By
 
 from src.browser import Browser
-
 from .constants import BASE_URL
 
 
@@ -66,7 +69,7 @@ class PunchCards:
                     )
             except Exception:  # pylint: disable=broad-except
                 self.browser.utils.resetTabs()
-        logging.info("[PUNCH CARDS] Completed the Punch Cards successfully !")
+        logging.info("[PUNCH CARDS] Completed the Punch Cards successfully!")
         time.sleep(2)
         self.webdriver.get(BASE_URL)
         time.sleep(2)

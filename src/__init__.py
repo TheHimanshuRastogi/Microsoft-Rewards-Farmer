@@ -1,3 +1,4 @@
+from .os import OS 
 from .browser import Browser
 from .dailySet import DailySet
 from .login import Login

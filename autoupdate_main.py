@@ -1,3 +1,7 @@
+"""
+This is a module docstring
+"""
+
 import os
 import sys
 from io import BytesIO

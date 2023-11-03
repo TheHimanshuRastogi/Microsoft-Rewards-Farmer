@@ -49,12 +49,12 @@
    ```json
    [
      {
-       "username": "Your Email 1",
+       "email": "Your Email 1",
        "password": "Your Password 1",
        "proxy": "http://user:pass@host1:port"
      },
      {
-       "username": "Your Email 2",
+       "email": "Your Email 2",
        "password": "Your Password 2",
        "proxy": "http://user:pass@host2:port"
      }

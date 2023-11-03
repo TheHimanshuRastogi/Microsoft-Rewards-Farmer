@@ -1,15 +1,18 @@
-import contextlib
-import json
-import locale as pylocale
+"""
+This is a module docstring
+"""
+
+
 import time
+import contextlib
 import urllib.parse
-from pathlib import Path
+import locale as pylocale
 
 import requests
-from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.chrome.webdriver import WebDriver
+from selenium.webdriver.support import expected_conditions as ec
 
 from .constants import BASE_URL
 
@@ -230,19 +233,3 @@ class Utils:
         return pylocale.format_string(
             f"%10.{num_decimals}f", number, grouping=True
         ).strip()
-
-    @staticmethod
-    def getBrowserConfig(sessionPath: Path) -> dict:
-        configFile = sessionPath.joinpath("config.json")
-        if configFile.exists():
-            with open(configFile, "r") as f:
-                config = json.load(f)
-                return config
-        else:
-            return {}
-
-    @staticmethod
-    def saveBrowserConfig(sessionPath: Path, config: dict):
-        configFile = sessionPath.joinpath("config.json")
-        with open(configFile, "w") as f:
-            json.dump(config, f)
