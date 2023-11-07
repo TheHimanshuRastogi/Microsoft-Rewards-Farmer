@@ -3,52 +3,25 @@ This is a module docstring
 """
 
 
-import sys
 import json
 import logging
 import argparse
 from pathlib import Path
-import logging.handlers as handlers
+from random import shuffle
 
-from src.notifier import Notifier
-from src.constants import VERSION
-from src.loggingColoredFormatter import ColoredFormatter
-from src import Browser, DailySet, Login, MorePromotions, PunchCards, Searches
+from src.logger import logger
+from src import Browser, Notifier, DailySet, Login, MorePromotions, PunchCards, Searches
 
 
 def main():
-    setupLogging()
+    notifier = Notifier()
     args = argumentParser()
-    notifier = Notifier(args)
     loadedAccounts = setupAccounts()
     for currentAccount in loadedAccounts:
         try:
             executeBot(currentAccount, notifier, args)
         except Exception as e:
             logging.exception(f"{e.__class__.__name__}: {e}")
-
-
-def setupLogging():
-    format = "%(asctime)s [%(levelname)s] %(message)s"
-    terminalHandler = logging.StreamHandler(sys.stdout)
-    terminalHandler.setFormatter(ColoredFormatter(format))
-
-    (Path(__file__).resolve().parent / "logs").mkdir(parents=True, exist_ok=True)
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format=format,
-        handlers=[
-            handlers.TimedRotatingFileHandler(
-                "logs/activity.log",
-                when="midnight",
-                interval=1,
-                backupCount=2,
-                encoding="utf-8",
-            ),
-            terminalHandler,
-        ],
-    )
 
 
 def argumentParser() -> argparse.Namespace:
@@ -69,60 +42,49 @@ def argumentParser() -> argparse.Namespace:
         default=None,
         help="Optional: Global Proxy (ex: http://user:pass@host:port)",
     )
-    parser.add_argument(
-        "-t",
-        "--telegram",
-        metavar=("TOKEN", "CHAT_ID"),
-        nargs=2,
-        type=str,
-        default=None,
-        help="Optional: Telegram Bot Token and Chat ID (ex: 123456789:ABCdefGhIjKlmNoPQRsTUVwxyZ 123456789)",
-    )
-    parser.add_argument(
-        "-d",
-        "--discord",
-        type=str,
-        default=None,
-        help="Optional: Discord Webhook URL (ex: https://discord.com/api/webhooks/123456789/ABCdefGhIjKlmNoPQRsTUVwxyZ)",
-    )
     return parser.parse_args()
+
 
 def setupAccounts() -> dict:
     accountPath = Path(__file__).resolve().parent / "accounts.json"
     if not accountPath.exists():
         accountPath.write_text(
             json.dumps(
-                [{"email": "Your Email", "password": "Your Password"}], indent=4
+                [
+                    {"email": "Your Email 1", "password": "Your Password 1"},
+                    {"email": "Your Email 2", "password": "Your Password 2"}
+                ], indent=4
             ),
             encoding="utf-8",
         )
-        noAccountsNotice = """
-    [ACCOUNT] Accounts credential file "accounts.json" not found.
-    [ACCOUNT] A new file has been created, please edit with your credentials and save.
-    """
-        logging.warning(noAccountsNotice)
+        logger.warning('[CREDENTIALS] Accounts credential file "accounts.json" not found.')
+        logger.warning('[CREDENTIALS] A new file has been created, please edit with your credentials and save.')
         exit()
     loadedAccounts = json.loads(accountPath.read_text(encoding="utf-8"))
+    logger.info(f'[ACCOUNT] No of Total Accounts: {len(loadedAccounts)}!\n')
     return loadedAccounts
 
 
 def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
-    logging.info(
-        f'[ACCOUNT] {currentAccount.get("email", "")}'
+    logger.info(
+        f'[ACCOUNT] {currentAccount.get("email", "")}',
+        tg=True
     )
     with Browser(mobile=False, account=currentAccount, args=args) as desktopBrowser:
         Login(desktopBrowser).login()
         startingPoints = desktopBrowser.utils.getAccountPoints()
-        logging.info(
-            f"[POINTS] You have {desktopBrowser.utils.formatNumber(startingPoints)} points on your account!"
+        logger.info(
+            f"[POINTS] You have {desktopBrowser.utils.formatNumber(startingPoints)} points on your account!",
+            tg=True
         )
         DailySet(desktopBrowser).completeDailySet()
         PunchCards(desktopBrowser).completePunchCards()
         MorePromotions(desktopBrowser).completeMorePromotions()
         remainingDesktop, remainingMobile = desktopBrowser.utils.getRemainingSearches()
         if remainingDesktop == remainingMobile  == 0:
-            logging.info(
-                "[SEARCH] You have already completed today's searches!"
+            logger.info(
+                "[SEARCH] You have already completed today's searches!",
+                tg=True
             )
         if remainingDesktop != 0:
             Searches(desktopBrowser).bingSearches(remainingDesktop)
@@ -135,14 +97,14 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
             Login(mobileBrowser).login()
             endPoints = Searches(mobileBrowser).bingSearches(remainingMobile)
 
-    logging.info(
+    logger.info(
         f"[POINTS] You have earned {endPoints - startingPoints} points today!"
     )
-    logging.info(
+    logger.info(
         f"[POINTS] You are now at {endPoints} points!\n"
     )
 
-    notifier.send(
+    notifier.telegram(
         "\n".join(
             [
                 "Microsoft Rewards Farmer",

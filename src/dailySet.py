@@ -3,10 +3,10 @@ This is a module docstring
 """
 
 
-import logging
 import urllib.parse
 from datetime import datetime
 
+from src.logger import logger
 from src.browser import Browser
 from .activities import Activities
 
@@ -18,7 +18,7 @@ class DailySet:
         self.activities = Activities(browser)
 
     def completeDailySet(self):
-        logging.info("[DAILY SET] " + "Trying to complete the Daily Set...")
+        logger.info("[DAILY SET] " + "Trying to complete the Daily Set...")
         self.browser.utils.goHome()
         data = self.browser.utils.getDashboardData()["dailySetPromotions"]
         todayDate = datetime.now().strftime("%m/%d/%Y")
@@ -28,7 +28,7 @@ class DailySet:
                     cardId = int(activity["offerId"][-1:])
                     self.activities.openDailySetActivity(cardId)
                     if activity["promotionType"] == "urlreward":
-                        logging.info(
+                        logger.info(
                             "[DAILY SET] " + f"Completing search of card {cardId}"
                         )
                         self.activities.completeSearch()
@@ -37,7 +37,7 @@ class DailySet:
                             activity["pointProgressMax"] == 50
                             and activity["pointProgress"] == 0
                         ):
-                            logging.info(
+                            logger.info(
                                 "[DAILY SET] "
                                 + f"Completing This or That of card {cardId}"
                             )
@@ -46,7 +46,7 @@ class DailySet:
                             activity["pointProgressMax"] in [40, 30]
                             and activity["pointProgress"] == 0
                         ):
-                            logging.info(
+                            logger.info(
                                 "[DAILY SET] " + f"Completing quiz of card {cardId}"
                             )
                             self.activities.completeQuiz()
@@ -69,12 +69,12 @@ class DailySet:
                                 filterEl = filterEl.split(":", 1)
                                 filters[filterEl[0]] = filterEl[1]
                             if "PollScenarioId" in filters:
-                                logging.info(
+                                logger.info(
                                     "[DAILY SET] " + f"Completing poll of card {cardId}"
                                 )
                                 self.activities.completeSurvey()
                             else:
-                                logging.info(
+                                logger.info(
                                     "[DAILY SET] " + f"Completing quiz of card {cardId}"
                                 )
                                 try:
@@ -83,4 +83,4 @@ class DailySet:
                                     self.activities.completeQuiz()
             except Exception:  # pylint: disable=broad-except
                 self.browser.utils.resetTabs()
-        logging.info("[DAILY SET] Completed the Daily Set successfully!")
+        logger.info("[DAILY SET] Completed the Daily Set successfully!")

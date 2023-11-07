@@ -5,6 +5,8 @@ This is a module docstring
 
 import requests
 
+from src.os import Os
+
 
 MAX_LENGTHS = {
     "telegram": 4096,
@@ -13,29 +15,16 @@ MAX_LENGTHS = {
 
 
 class Notifier:
-    def __init__(self, args):
-        self.args = {
-            key: value
-            for key, value in vars(args).items()
-            if key in MAX_LENGTHS.keys() and value is not None
-        }
-
-    def send(self, message: str):
-        for type in self.args:
-            if len(message) > MAX_LENGTHS[type]:
-                for i in range(0, len(message), MAX_LENGTHS[type]):
-                    self.send(message[i : i + MAX_LENGTHS[type]])
-                return
-            else:
-                getattr(self, type)(message)
+    def __init__(self):
+        self.os = Os()
+        self.tg_chat_id = self.os.env("TG_CHAT_ID")
+        self.tg_bot_token = self.os.env("TG_BOT_TOKEN")
+        self.discord_webhook_url = self.os.env("DISCORD_WEBHOOK_URL")
 
     def telegram(self, message):
-        token, chat_id = self.args["telegram"]
-        url = f"https://api.telegram.org/bot{token}/sendMessage"
-        data = {"chat_id": chat_id, "text": message}
-        requests.post(url, data=data)
+        data = {"chat_id": self.tg_chat_id, "text": message}
+        requests.post(url=f"https://api.telegram.org/bot{self.tg_bot_token}/sendMessage", data=data)
 
     def discord(self, message):
-        url = self.args["discord"]
         data = {"email": "Microsoft Rewards Farmer", "content": message}
-        requests.post(url, data=data)
+        requests.post(url=self.discord_webhook_url, data=data)

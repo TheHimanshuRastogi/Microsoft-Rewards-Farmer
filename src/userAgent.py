@@ -10,7 +10,7 @@ import requests
 from requests import HTTPError, Response
 
 
-class GenerateUserAgent:
+class UserAgent:
     """A class for generating user agents for Microsoft Rewards Farmer."""
 
     # Reduced device name, ref: https://developer.chrome.com/blog/user-agent-reduction-android-model-and-version/
@@ -34,7 +34,7 @@ class GenerateUserAgent:
     OS_PLATFORMS = {"win": "Windows NT 10.0", "android": "Linux"}
     OS_CPUS = {"win": "Win64; x64", "android": "Android 10"}
 
-    def userAgent(
+    def generate(
         self,
         mobile: bool = False,
     ) -> tuple[str, dict[str, Any], Any]:

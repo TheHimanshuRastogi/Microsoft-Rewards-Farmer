@@ -4,12 +4,12 @@ This is a module docstring
 
 import time
 import random
-import logging
 import contextlib
 import urllib.parse
 
 from selenium.webdriver.common.by import By
 
+from src.logger import logger
 from src.browser import Browser
 from .constants import BASE_URL
 
@@ -52,7 +52,7 @@ class PunchCards:
                     self.browser.utils.closeCurrentTab()
 
     def completePunchCards(self):
-        logging.info("[PUNCH CARDS] " + "Trying to complete the Punch Cards...")
+        logger.info("[PUNCH CARDS] " + "Trying to complete the Punch Cards...")
         self.completePromotionalItems()
         punchCards = self.browser.utils.getDashboardData()["punchCards"]
         for punchCard in punchCards:
@@ -69,7 +69,7 @@ class PunchCards:
                     )
             except Exception:  # pylint: disable=broad-except
                 self.browser.utils.resetTabs()
-        logging.info("[PUNCH CARDS] Completed the Punch Cards successfully!")
+        logger.info("[PUNCH CARDS] Completed the Punch Cards successfully!")
         time.sleep(2)
         self.webdriver.get(BASE_URL)
         time.sleep(2)

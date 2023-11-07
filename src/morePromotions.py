@@ -2,9 +2,7 @@
 This is a module docstring
 """
 
-
-import logging
-
+from src.logger import logger
 from src.browser import Browser
 from .activities import Activities
 
@@ -15,7 +13,7 @@ class MorePromotions:
         self.activities = Activities(browser)
 
     def completeMorePromotions(self):
-        logging.info("[MORE PROMO] " + "Trying to complete More Promotions...")
+        logger.info("[MORE PROMO] " + "Trying to complete More Promotions...")
         morePromotions = self.browser.utils.getDashboardData()["morePromotions"]
         i = 0
         for promotion in morePromotions:
@@ -42,4 +40,4 @@ class MorePromotions:
                         self.activities.completeSearch()
             except Exception:  # pylint: disable=broad-except
                 self.browser.utils.resetTabs()
-        logging.info("[MORE PROMO] Completed More Promotions successfully!")
+        logger.info("[MORE PROMO] Completed More Promotions successfully!")

@@ -14,9 +14,10 @@ try:
 except ImportError:
     pass
 
-from src.os import OS
+from src.os import Os
 from src.utils import Utils
-from src.userAgentGenerator import GenerateUserAgent
+from src.logger import logger
+from src.userAgent import UserAgent
 
 
 class Browser:
@@ -24,7 +25,7 @@ class Browser:
 
     def __init__(self, mobile: bool, account, args: Any) -> None:
         
-        self.os = OS()
+        self.os = Os()
         self.mobile = mobile
         self.browserType = "mobile" if mobile else "desktop"
         self.headless = False or args.visible
@@ -38,7 +39,7 @@ class Browser:
         elif account.get("proxy"):
             self.proxy = account["proxy"]
 
-        self.userAgent, self.userAgentMetadata = GenerateUserAgent().userAgent(self.mobile)
+        self.userAgent, self.userAgentMetadata = UserAgent().generate(self.mobile)
 
         self.webdriver = self.browserSetup()
         self.utils = Utils(self.webdriver)
@@ -55,7 +56,8 @@ class Browser:
         options.add_argument("--ignore-certificate-errors-spki-list")
         options.add_argument("--ignore-ssl-errors")
         if not self.headless:
-            options.add_argument("--headless")
+            if self.os.linux:
+                options.add_argument("--headless")
         if self.os.windows:
             options.add_argument(f"--user-data-dir={os.getcwd()}/ChromeData")
             options.add_argument(f"--profile-directory={self.email}")
@@ -140,8 +142,9 @@ class Browser:
         seleniumLogger = logging.getLogger("seleniumwire")
         seleniumLogger.setLevel(logging.ERROR)
 
-        logging.info(
-            f"[BROWSER] Working with {self.browserType.capitalize()} browser..."
+        logger.info(
+            f"[BROWSER] Working with {self.browserType.capitalize()} browser...",
+            tg=True
         )
 
         return driver 
@@ -161,7 +164,7 @@ class Browser:
     
     def closeBrowser(self) -> None:
         """Perform actions to close the browser cleanly."""
-        logging.info(
+        logger.info(
             f"[BROWSER] Closing {self.browserType.capitalize()} browser!"
         )
 
